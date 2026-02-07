@@ -1,0 +1,49 @@
+@startuml Activity Diagram - Plant Care Tracking
+
+!theme plain
+
+start
+
+:User Opens Plant Details;
+
+if (Update Health Status?) then (yes)
+  :Enter Health Status;
+  :Enter Growth Percentage;
+  if (Add Notes?) then (yes)
+    :Enter Notes;
+  else (no)
+  endif
+  if (Upload Image?) then (yes)
+    :Select and Upload Image;
+  else (no)
+  endif
+  :Save Health History;
+  note right
+    Creates record
+    in plant_health_history
+  end note
+else (no)
+endif
+
+if (Update Watering Date?) then (yes)
+  :Select Next Watering Date;
+  :Update User Plant Record;
+  note right
+    Updates next_watering_date
+    in user_plants table
+  end note
+else (no)
+endif
+
+if (View Health History?) then (yes)
+  :Load Health History;
+  :Display Timeline;
+else (no)
+endif
+
+:Display Updated Plant Info;
+
+stop
+
+@enduml
+

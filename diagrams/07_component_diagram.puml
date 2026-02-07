@@ -1,0 +1,61 @@
+@startuml Component Diagram
+
+!theme plain
+
+package "Presentation Layer" {
+  [UI Screens] as UI
+  [Widgets] as Widgets
+}
+
+package "State Management" {
+  [Bloc / Provider] as State
+}
+
+package "Business Logic" {
+  [Plant Service] as PlantService
+  [Order Service] as OrderService
+  [Reminder Service] as ReminderService
+  [Profile Service] as ProfileService
+}
+
+package "Data Layer" {
+  [API Client] as API
+  [Local Storage] as Local
+  [Models] as Models
+}
+
+package "External Services" {
+  [Supabase Auth] as Auth
+  [Supabase Database] as DB
+  [Supabase Storage] as Storage
+  [Notifications] as Notif
+}
+
+' Connections
+UI --> Widgets
+UI --> State
+Widgets --> State
+
+State --> PlantService
+State --> OrderService
+State --> ReminderService
+State --> ProfileService
+
+PlantService --> API
+OrderService --> API
+ReminderService --> API
+ProfileService --> API
+
+API --> Models
+API --> Auth
+API --> DB
+API --> Storage
+
+ReminderService --> Notif
+OrderService --> Models
+PlantService --> Models
+
+Local --> Models
+
+@enduml
+

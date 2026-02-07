@@ -1,0 +1,53 @@
+@startuml Deployment Diagram
+
+!theme plain
+skinparam node {
+  BackgroundColor LightBlue
+  BorderColor DarkBlue
+}
+
+node "Mobile Device" {
+  artifact "Flutter App" as App {
+    component "UI"
+    component "Services"
+    component "Local Cache"
+  }
+}
+
+node "Cloud Infrastructure" {
+  node "Supabase Platform" {
+    artifact "Authentication Server" as AuthSrv
+    artifact "API Gateway" as APIGW
+    artifact "Database Server\n(PostgreSQL)" as DBSrv
+    artifact "Storage Server" as StorageSrv
+    artifact "Realtime Server" as RealtimeSrv
+  }
+}
+
+cloud "Internet" {
+}
+
+' Connections
+App --> Internet : HTTPS
+Internet --> APIGW : REST API
+Internet --> AuthSrv : Auth Requests
+Internet --> StorageSrv : File Upload/Download
+Internet --> RealtimeSrv : WebSocket
+
+APIGW --> DBSrv : SQL Queries
+AuthSrv --> DBSrv : User Validation
+StorageSrv --> DBSrv : Metadata
+
+note right of App
+  iOS / Android
+  Installed on device
+end note
+
+note right of DBSrv
+  Stores all app data
+  Tables: profiles, plants,
+  orders, etc.
+end note
+
+@enduml
+

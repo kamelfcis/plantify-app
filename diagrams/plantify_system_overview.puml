@@ -1,0 +1,53 @@
+@startuml Plantify System Overview
+
+!theme plain
+skinparam linetype ortho
+skinparam rectangle {
+  BackgroundColor LightBlue
+  BorderColor DarkBlue
+}
+
+rectangle "Flutter Mobile App" as flutter {
+  rectangle "UI Layer" as ui
+  rectangle "Services" as services
+  rectangle "Models" as models
+}
+
+rectangle "Supabase Backend" as supabase {
+  rectangle "Authentication" as auth
+  rectangle "Database API" as dbapi
+  rectangle "Storage API" as storage
+  rectangle "Realtime" as realtime
+}
+
+database "PostgreSQL Database" as database {
+  rectangle "Tables:\n- profiles\n- plants\n- user_plants\n- health_history\n- reminders\n- products\n- orders\n- order_items\n- gifts" as tables
+}
+
+cloud "Storage Buckets" as buckets {
+  rectangle "plant-images\n(Public)" as plant_bucket
+  rectangle "product-images\n(Public)" as product_bucket
+  rectangle "user-uploads\n(Private)" as user_bucket
+}
+
+' Flutter internal connections
+ui --> services
+services --> models
+
+' App to Backend
+flutter --> auth : "Login/Register"
+flutter --> dbapi : "CRUD Operations"
+flutter --> storage : "Upload/Download"
+flutter --> realtime : "Live Updates"
+
+' Backend to Database
+dbapi --> tables : "SQL Queries"
+auth --> tables : "User Auth"
+
+' Backend to Storage
+storage --> plant_bucket : "Plant Images"
+storage --> product_bucket : "Product Images"
+storage --> user_bucket : "User Files"
+
+@enduml
+

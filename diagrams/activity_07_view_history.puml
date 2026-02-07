@@ -1,0 +1,49 @@
+  @startuml Activity Diagram - View History
+
+  !theme plain
+
+  start
+
+  :User Opens History;
+
+  if (View Plant History?) then (yes)
+    :Select User Plant;
+    :Load Health History;
+    :Display Plant Health Timeline;
+    note right
+      Shows all health records
+      from plant_health_history
+    end note
+    if (View Specific Record?) then (yes)
+      :Display Record Details;
+      :Show Notes and Images;
+    else (no)
+    endif
+  else (no)
+  endif
+
+  if (View Order History?) then (yes)
+    :Load User Orders;
+    :Display Order List;
+    note right
+      Shows all orders
+      from orders table
+    end note
+    if (View Order Details?) then (yes)
+      :Display Order Information;
+      :Show Order Items;
+      :Show Shipping Status;
+      if (Track Gift Order?) then (yes)
+        :Display Gift Details;
+        :Show Delivery Tracking;
+      else (no)
+      endif
+    else (no)
+    endif
+  else (no)
+  endif
+
+  stop
+
+  @enduml
+

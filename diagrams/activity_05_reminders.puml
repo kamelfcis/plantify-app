@@ -1,0 +1,48 @@
+@startuml Activity Diagram - Create Care Reminder
+
+!theme plain
+
+start
+
+:User Opens Reminders;
+
+:Create New Reminder;
+
+if (Link to Plant?) then (yes)
+  :Select User Plant;
+else (no)
+  :General Reminder;
+endif
+
+:Set Reminder Type;
+note right
+  Watering, Fertilizing,
+  Pruning, etc.
+end note
+
+:Set Scheduled Time;
+
+:Set Repeat Frequency;
+note right
+  Daily, Weekly, Once
+end note
+
+if (Add Care Tips?) then (yes)
+  :Enter Care Tips;
+else (no)
+endif
+
+:Save Reminder;
+note right
+  Creates record
+  in reminders table
+end note
+
+:Schedule Local Notification;
+
+:Show Reminder Created Confirmation;
+
+stop
+
+@enduml
+

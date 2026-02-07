@@ -1,0 +1,41 @@
+@startuml Activity Diagram - Plant Identification
+
+!theme plain
+
+start
+
+:User Opens Plant Identification;
+
+:Take Photo of Plant;
+
+:AI Identifies Species;
+note right
+  Plant Identification Model
+  Matches with Database
+end note
+
+:Display Plant Information;
+note right
+  Shows plant name,
+  scientific name, category
+end note
+
+:Display Care Instructions;
+
+if (Add to Collection?) then (yes)
+  :Enter Plant Name;
+  :Set Initial Health Status;
+  :Save User Plant;
+  note right
+    Creates record
+    in user_plants table
+  end note
+  :Show Plant Added Confirmation;
+else (no)
+  :User Views Info Only;
+endif
+
+stop
+
+@enduml
+

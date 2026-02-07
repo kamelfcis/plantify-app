@@ -1,0 +1,124 @@
+@startuml ER Diagram
+
+!theme plain
+skinparam linetype ortho
+
+entity "profiles" {
+  * id : UUID <<PK>>
+  --
+  full_name
+  email
+  avatar_url
+  phone
+  address
+}
+
+entity "plants" {
+  * id : UUID <<PK>>
+  --
+  name
+  scientific_name
+  category
+  description
+  care_instructions
+  image_url
+}
+
+entity "user_plants" {
+  * id : UUID <<PK>>
+  --
+  * user_id : UUID <<FK>>
+  plant_id : UUID <<FK>>
+  name
+  health_status
+  growth_percentage
+  next_watering_date
+  notes
+  image_url
+}
+
+entity "plant_health_history" {
+  * id : UUID <<PK>>
+  --
+  * user_plant_id : UUID <<FK>>
+  health_status
+  growth_percentage
+  notes
+  recorded_at
+}
+
+entity "reminders" {
+  * id : UUID <<PK>>
+  --
+  * user_id : UUID <<FK>>
+  user_plant_id : UUID <<FK>>
+  title
+  reminder_type
+  scheduled_time
+  repeat_frequency
+  is_active
+}
+
+entity "products" {
+  * id : UUID <<PK>>
+  --
+  name
+  description
+  price
+  category
+  image_url
+  in_stock
+  stock_quantity
+}
+
+entity "orders" {
+  * id : UUID <<PK>>
+  --
+  * user_id : UUID <<FK>>
+  order_number
+  total_amount
+  status
+  shipping_address
+  is_gift
+}
+
+entity "order_items" {
+  * id : UUID <<PK>>
+  --
+  * order_id : UUID <<FK>>
+  product_id : UUID <<FK>>
+  product_name
+  product_price
+  quantity
+  subtotal
+}
+
+entity "gifts" {
+  * id : UUID <<PK>>
+  --
+  * order_id : UUID <<FK>>
+  * sender_id : UUID <<FK>>
+  receiver_name
+  receiver_email
+  receiver_address
+  gift_message
+}
+
+' Relationships
+profiles ||--o{ user_plants
+profiles ||--o{ reminders
+profiles ||--o{ orders
+profiles ||--o{ gifts
+
+plants ||--o{ user_plants
+
+user_plants ||--o{ plant_health_history
+user_plants ||--o{ reminders
+
+orders ||--o{ order_items
+orders ||--|| gifts
+
+products ||--o{ order_items
+
+@enduml
+

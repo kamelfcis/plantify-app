@@ -1,0 +1,55 @@
+@startuml Activity Diagram - Marketplace & Orders
+
+!theme plain
+
+start
+
+:User Opens Marketplace;
+
+:View Product Catalog;
+
+if (Search/Filter?) then (yes)
+  :Enter Search Criteria;
+  :Filter Products;
+else (no)
+endif
+
+:View Product Details;
+
+if (Add to Cart?) then (yes)
+  :Select Quantity;
+  :Add to Shopping Cart;
+  if (Add More Products?) then (yes)
+    :Continue Shopping;
+  else (no)
+    :Proceed to Checkout;
+    :Enter Shipping Address;
+    :Review Order;
+    :Confirm Payment;
+    :Place Order;
+    note right
+      Creates order
+      and order_items
+    end note
+    if (Send as Gift?) then (yes)
+      :Enter Receiver Name;
+      :Enter Receiver Email;
+      :Enter Receiver Address;
+      :Add Gift Message;
+      :Create Gift Record;
+      note right
+        Creates record
+        in gifts table
+      end note
+    else (no)
+    endif
+    :Show Order Confirmation;
+  endif
+else (no)
+  :User Continues Browsing;
+endif
+
+stop
+
+@enduml
+

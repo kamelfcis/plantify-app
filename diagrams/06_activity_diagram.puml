@@ -1,0 +1,131 @@
+@startuml Activity Diagram - All Use Cases
+
+!theme plain
+
+start
+
+:User Opens App;
+
+partition "Plant Disease Detection" {
+  if (Detect Disease?) then (yes)
+    :Take/Upload Plant Image;
+    :AI Analyzes Image;
+    :Display Disease Result;
+    :Show Treatment Recommendations;
+    if (Save to Plant?) then (yes)
+      :Link Result to User Plant;
+    else (no)
+    endif
+  else (no)
+  endif
+}
+
+partition "Plant Identification" {
+  if (Identify Plant?) then (yes)
+    :Take Photo of Plant;
+    :AI Identifies Species;
+    :Display Plant Information;
+    if (Add to Collection?) then (yes)
+      :Add Plant to Collection;
+    else (no)
+    endif
+  else (no)
+  endif
+}
+
+partition "Add Plant to Collection" {
+  if (Add New Plant?) then (yes)
+    :Select Plant from Catalog;
+    :Enter Plant Name;
+    :Set Initial Health Status;
+    :Upload Plant Image (optional);
+    :Save User Plant;
+    note right: Creates record\nin user_plants table
+  else (no)
+  endif
+}
+
+partition "Plant Care Tracking" {
+  if (Track Plant Care?) then (yes)
+    :Select User Plant;
+    if (Update Health?) then (yes)
+      :Enter Health Status;
+      :Enter Growth Percentage;
+      :Add Notes (optional);
+      :Upload Image (optional);
+      :Save Health History;
+      note right: Creates record\nin plant_health_history
+    else (no)
+    endif
+    if (Update Watering Date?) then (yes)
+      :Select Next Watering Date;
+      :Update User Plant Record;
+    else (no)
+    endif
+  else (no)
+  endif
+}
+
+partition "Care Reminders" {
+  if (Create Reminder?) then (yes)
+    :Select Plant (optional);
+    :Set Reminder Type;
+    :Set Scheduled Time;
+    :Set Repeat Frequency;
+    :Add Care Tips (optional);
+    :Save Reminder;
+    :Schedule Notification;
+    note right: Creates reminder\nand local notification
+  else (no)
+  endif
+}
+
+partition "Marketplace & Orders" {
+  if (Browse Marketplace?) then (yes)
+    :View Product Catalog;
+    :Search/Filter Products;
+    :View Product Details;
+    if (Add to Cart?) then (yes)
+      :Select Quantity;
+      :Add to Shopping Cart;
+      if (Proceed to Checkout?) then (yes)
+        :Enter Shipping Address;
+        :Review Order;
+        :Confirm Payment;
+        :Place Order;
+        note right: Creates order\nand order_items
+        if (Send as Gift?) then (yes)
+          :Enter Receiver Details;
+          :Add Gift Message;
+          :Create Gift Record;
+        else (no)
+        endif
+        :Show Order Confirmation;
+      else (no)
+      endif
+    else (no)
+    endif
+  else (no)
+  endif
+}
+
+partition "View History" {
+  if (View History?) then (yes)
+    if (Plant History?) then (yes)
+      :Display Plant Health Timeline;
+    else (no)
+    endif
+    if (Order History?) then (yes)
+      :Display Past Orders;
+    else (no)
+    endif
+  else (no)
+  endif
+}
+
+:User Continues Using App;
+
+stop
+
+@enduml
+

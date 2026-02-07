@@ -1,0 +1,95 @@
+@startuml Sequence Diagram - All Use Cases
+
+!theme plain
+
+actor User
+participant "Flutter UI" as UI
+participant "Plant Service" as PlantService
+participant "Reminder Service" as ReminderService
+participant "Order Service" as OrderService
+participant "AI Service" as AI
+participant "Supabase API" as API
+participant "Database" as DB
+
+== Plant Disease Detection ==
+User -> UI: Upload Plant Image
+UI -> AI: analyzeImage(image)
+AI -> AI: Detect Disease/Health Issue
+AI --> UI: Disease Result + Recommendations
+UI -> User: Show Diagnosis & Care Tips
+
+== Plant Identification ==
+User -> UI: Take Photo of Plant
+UI -> AI: identifyPlant(image)
+AI -> AI: Match with Plant Database
+AI --> UI: Plant Species Info
+UI -> User: Display Plant Details
+
+== Add Plant to Collection ==
+User -> UI: Add New Plant
+UI -> PlantService: addUserPlant(plantData)
+PlantService -> API: POST /user_plants
+API -> DB: Insert User Plant
+DB --> API: Plant Created
+API --> PlantService: Plant Response
+PlantService -> UI: Success
+UI -> User: Show Plant Added
+
+== Update Plant Health ==
+User -> UI: Update Health Status
+UI -> PlantService: updateHealth(plantId, healthData)
+PlantService -> API: POST /plant_health_history
+API -> DB: Insert Health Record
+DB --> API: Record Created
+API -> PlantService: Update User Plant Status
+PlantService -> API: PUT /user_plants/{id}
+API -> DB: Update Plant Health
+DB --> API: Updated
+API --> PlantService: Success
+PlantService -> UI: Health Updated
+UI -> User: Show Updated Status
+
+== Create Care Reminder ==
+User -> UI: Create Reminder
+UI -> ReminderService: createReminder(reminderData)
+ReminderService -> API: POST /reminders
+API -> DB: Insert Reminder
+DB --> API: Reminder Created
+API --> ReminderService: Reminder Response
+ReminderService -> ReminderService: Schedule Notification
+ReminderService -> UI: Reminder Created
+UI -> User: Confirm Reminder
+
+== Browse & Place Order ==
+User -> UI: Browse Products
+UI -> API: GET /products
+API -> DB: Fetch Products
+DB --> API: Products List
+API --> UI: Products Data
+UI -> User: Display Products
+
+User -> UI: Add to Cart
+User -> UI: Click Checkout
+UI -> OrderService: createOrder(items, address)
+OrderService -> API: POST /orders
+API -> DB: Insert Order
+DB --> API: Order Created
+
+API -> DB: Insert Order Items
+DB --> API: Items Created
+
+API --> OrderService: Order Response
+OrderService -> UI: Show Success
+UI -> User: Display Order Confirmation
+
+opt Gift Order
+  User -> UI: Select Gift Option
+  UI -> OrderService: createGift(orderId, giftData)
+  OrderService -> API: POST /gifts
+  API -> DB: Insert Gift
+  DB --> API: Gift Created
+  API --> OrderService: Gift Response
+end
+
+@enduml
+

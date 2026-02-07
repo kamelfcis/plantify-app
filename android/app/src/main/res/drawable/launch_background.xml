@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launch splash screen with gradient background -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Gradient background -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#DF939D"
+                android:endColor="#E3BBBC"
+                android:angle="135" />
+        </shape>
+    </item>
+    
+    <!-- Logo will be shown by Flutter splash screen -->
+</layer-list>
+

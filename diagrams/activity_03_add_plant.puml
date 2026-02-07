@@ -1,0 +1,45 @@
+@startuml Activity Diagram - Add Plant to Collection
+
+!theme plain
+
+start
+
+:User Opens Add Plant;
+
+:Select Plant from Catalog;
+note right
+  Browse plants database
+end note
+
+:Enter Plant Name;
+
+:Set Initial Health Status;
+note right
+  Excellent, Good, Fair, Poor
+end note
+
+if (Upload Plant Image?) then (yes)
+  :Select Image from Gallery;
+  :Upload Image;
+else (no)
+endif
+
+if (Add Scientific Name?) then (yes)
+  :Enter Scientific Name;
+else (no)
+endif
+
+:Set Initial Growth Percentage;
+
+:Save User Plant;
+note right
+  Creates record
+  in user_plants table
+end note
+
+:Show Plant Added Successfully;
+
+stop
+
+@enduml
+

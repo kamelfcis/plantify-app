@@ -1,0 +1,129 @@
+@startuml Plantify ER Diagram
+
+!theme plain
+skinparam linetype ortho
+
+entity "profiles" as profiles {
+  * id : UUID <<PK>>
+  --
+  full_name : TEXT
+  email : TEXT
+  avatar_url : TEXT
+  phone : TEXT
+  address : TEXT
+  city : TEXT
+  zip_code : TEXT
+  country : TEXT
+}
+
+entity "plants" as plants {
+  * id : UUID <<PK>>
+  --
+  name : TEXT
+  scientific_name : TEXT
+  category : TEXT
+  description : TEXT
+  care_instructions : JSONB
+  image_url : TEXT
+}
+
+entity "user_plants" as user_plants {
+  * id : UUID <<PK>>
+  --
+  * user_id : UUID <<FK>>
+  plant_id : UUID <<FK>>
+  name : TEXT
+  health_status : TEXT
+  growth_percentage : INTEGER
+  next_watering_date : DATE
+  notes : TEXT
+  image_url : TEXT
+}
+
+entity "plant_health_history" as health_history {
+  * id : UUID <<PK>>
+  --
+  * user_plant_id : UUID <<FK>>
+  health_status : TEXT
+  growth_percentage : INTEGER
+  notes : TEXT
+  image_url : TEXT
+  recorded_at : TIMESTAMP
+}
+
+entity "reminders" as reminders {
+  * id : UUID <<PK>>
+  --
+  * user_id : UUID <<FK>>
+  user_plant_id : UUID <<FK>>
+  title : TEXT
+  reminder_type : TEXT
+  scheduled_time : TIME
+  repeat_frequency : TEXT
+  is_active : BOOLEAN
+}
+
+entity "products" as products {
+  * id : UUID <<PK>>
+  --
+  name : TEXT
+  description : TEXT
+  price : DECIMAL
+  category : TEXT
+  image_url : TEXT
+  in_stock : BOOLEAN
+  stock_quantity : INTEGER
+}
+
+entity "orders" as orders {
+  * id : UUID <<PK>>
+  --
+  * user_id : UUID <<FK>>
+  order_number : TEXT
+  total_amount : DECIMAL
+  status : TEXT
+  shipping_address : JSONB
+  is_gift : BOOLEAN
+}
+
+entity "order_items" as order_items {
+  * id : UUID <<PK>>
+  --
+  * order_id : UUID <<FK>>
+  product_id : UUID <<FK>>
+  product_name : TEXT
+  product_price : DECIMAL
+  quantity : INTEGER
+  subtotal : DECIMAL
+}
+
+entity "gifts" as gifts {
+  * id : UUID <<PK>>
+  --
+  * order_id : UUID <<FK>>
+  * sender_id : UUID <<FK>>
+  receiver_name : TEXT
+  receiver_email : TEXT
+  receiver_address : JSONB
+  gift_message : TEXT
+  delivery_tracking : TEXT
+}
+
+' Relationships
+profiles ||--o{ user_plants : "has"
+profiles ||--o{ reminders : "creates"
+profiles ||--o{ orders : "places"
+profiles ||--o{ gifts : "sends"
+
+plants ||--o{ user_plants : "referenced by"
+
+user_plants ||--o{ health_history : "has history"
+user_plants ||--o{ reminders : "has reminders"
+
+orders ||--o{ order_items : "contains"
+orders ||--|| gifts : "can be"
+
+products ||--o{ order_items : "ordered as"
+
+@enduml
+

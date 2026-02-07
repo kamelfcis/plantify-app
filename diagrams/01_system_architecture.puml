@@ -1,0 +1,67 @@
+@startuml System Architecture
+
+!theme plain
+skinparam linetype ortho
+
+rectangle "Flutter Mobile App" as app {
+  rectangle "Presentation Layer" as ui
+  rectangle "Business Logic" as logic
+  rectangle "Data Layer" as data
+}
+
+cloud "Supabase Backend" as backend {
+  rectangle "Authentication Service" as auth
+  rectangle "REST API" as api
+  rectangle "Realtime Service" as realtime
+  rectangle "Storage Service" as storage
+}
+
+database "PostgreSQL Database" as db
+
+cloud "File Storage" as files {
+  rectangle "Plant Images" as img1
+  rectangle "Product Images" as img2
+  rectangle "User Uploads" as img3
+}
+
+cloud "AI Services" as ai {
+  rectangle "Plant Disease\nDetection Model" as disease_model
+  rectangle "Plant Identification\nModel" as identify_model
+  rectangle "Care Recommendation\nEngine" as care_model
+  rectangle "Chatbot Assistant" as chatbot
+}
+
+' App internal
+ui --> logic
+logic --> data
+
+' App to Backend
+data --> auth : "User Auth"
+data --> api : "CRUD Operations"
+data --> realtime : "Live Updates"
+data --> storage : "File Upload/Download"
+
+' App to AI Services
+ui --> disease_model : "Analyze Plant Image"
+ui --> identify_model : "Identify Plant Species"
+logic --> care_model : "Get Care Tips"
+ui --> chatbot : "Ask Questions"
+
+' Backend to Database
+auth --> db
+api --> db
+
+' Backend to Storage
+storage --> files
+
+' Backend to AI Services
+api --> disease_model : "Process Image"
+api --> identify_model : "Identify Plant"
+api --> care_model : "Generate Recommendations"
+
+' AI Models use storage
+disease_model --> img1 : "Load Training Data"
+identify_model --> img1 : "Reference Images"
+
+@enduml
+

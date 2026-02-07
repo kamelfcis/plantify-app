@@ -1,0 +1,38 @@
+    @startuml Activity Diagram - Plant Disease Detection
+
+    !theme plain
+
+    start
+
+    :User Opens Disease Detection;
+
+    :Take/Upload Plant Image;
+flutter
+    :AI Analyzes Image;
+    note right
+    Disease Detection Model
+    Processes Image
+    end note
+
+    :Display Disease Result;
+    note right
+    Shows detected disease
+    or health issue
+    end note
+
+    :Show Treatment Recommendations;
+
+    if (Save Result to Plant?) then (yes)
+    :Link Result to User Plant;
+    :Update Plant Health Status;
+    :Save to Database;
+    else (no)
+    :Result Not Saved;
+    endif
+
+    :Display Results Screen;
+
+    stop
+
+    @enduml
+

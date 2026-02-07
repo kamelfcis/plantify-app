@@ -1,0 +1,128 @@
+@startuml Plantify Flutter Class Diagram
+
+!theme plain
+skinparam classAttributeIconSize 0
+
+class Profile {
+  + String id
+  + String fullName
+  + String email
+  + String? avatarUrl
+  + String? phone
+  + String? address
+  + String? city
+  --
+  + updateProfile()
+}
+
+class Plant {
+  + String id
+  + String name
+  + String? scientificName
+  + String category
+  + String? description
+  + Map<String, dynamic>? careInstructions
+  + String? imageUrl
+}
+
+class UserPlant {
+  + String id
+  + String userId
+  + String? plantId
+  + String name
+  + String healthStatus
+  + int growthPercentage
+  + DateTime? nextWateringDate
+  + String? notes
+  + String? imageUrl
+  --
+  + updateHealth()
+  + updateWateringDate()
+}
+
+class PlantHealthHistory {
+  + String id
+  + String userPlantId
+  + String healthStatus
+  + int? growthPercentage
+  + String? notes
+  + String? imageUrl
+  + DateTime recordedAt
+}
+
+class Reminder {
+  + String id
+  + String userId
+  + String? userPlantId
+  + String title
+  + String reminderType
+  + TimeOfDay scheduledTime
+  + String repeatFrequency
+  + bool isActive
+  --
+  + schedule()
+  + cancel()
+}
+
+class Product {
+  + String id
+  + String name
+  + String? description
+  + double price
+  + String category
+  + String? imageUrl
+  + bool inStock
+  + int stockQuantity
+}
+
+class Order {
+  + String id
+  + String userId
+  + String orderNumber
+  + double totalAmount
+  + Map<String, dynamic> shippingAddress
+  + String status
+  + bool isGift
+  --
+  + cancel()
+}
+
+class OrderItem {
+  + String id
+  + String orderId
+  + String? productId
+  + String productName
+  + double productPrice
+  + int quantity
+  + double subtotal
+}
+
+class Gift {
+  + String id
+  + String orderId
+  + String senderId
+  + String receiverName
+  + String receiverEmail
+  + Map<String, dynamic> receiverAddress
+  + String? giftMessage
+  + String? deliveryTracking
+}
+
+' Relationships
+Profile "1" --> "*" UserPlant : owns
+Profile "1" --> "*" Reminder : creates
+Profile "1" --> "*" Order : places
+Profile "1" --> "*" Gift : sends
+
+Plant "1" --> "*" UserPlant : referenced by
+
+UserPlant "1" --> "*" PlantHealthHistory : has history
+UserPlant "0..*" --> "*" Reminder : has reminders
+
+Order "1" --> "*" OrderItem : contains
+Order "1" --> "0..1" Gift : can be
+
+Product "1" --> "*" OrderItem : ordered as
+
+@enduml
+
