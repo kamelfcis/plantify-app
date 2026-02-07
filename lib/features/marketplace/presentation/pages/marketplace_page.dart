@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/glass_card.dart';
-import 'widgets/product_card.dart';
+import '../../../../services/supabase_service.dart';
+import '../managers/cart_manager.dart';
 import '../models/product_model.dart';
+import 'widgets/product_card.dart';
 
 class MarketplacePage extends StatefulWidget {
   const MarketplacePage({super.key});
@@ -12,157 +13,271 @@ class MarketplacePage extends StatefulWidget {
   State<MarketplacePage> createState() => _MarketplacePageState();
 }
 
-class _MarketplacePageState extends State<MarketplacePage> {
-  final List<Product> _products = [
-    Product(
-      id: '1',
-      name: 'Monstera Deliciosa',
-      description: 'Beautiful tropical plant with unique split leaves',
-      price: 29.99,
-      imageUrl: '',
-      category: 'Indoor',
-      inStock: true,
-    ),
-    Product(
-      id: '2',
-      name: 'Snake Plant',
-      description: 'Low-maintenance plant perfect for beginners',
-      price: 19.99,
-      imageUrl: '',
-      category: 'Indoor',
-      inStock: true,
-    ),
-    Product(
-      id: '3',
-      name: 'Pothos Golden',
-      description: 'Fast-growing trailing plant with golden variegation',
-      price: 15.99,
-      imageUrl: '',
-      category: 'Indoor',
-      inStock: true,
-    ),
-    Product(
-      id: '4',
-      name: 'Lavender',
-      description: 'Fragrant herb perfect for outdoor gardens',
-      price: 12.99,
-      imageUrl: '',
-      category: 'Outdoor',
-      inStock: true,
-    ),
-    Product(
-      id: '5',
-      name: 'Aloe Vera',
-      description: 'Medicinal succulent with healing properties',
-      price: 9.99,
-      imageUrl: '',
-      category: 'Succulent',
-      inStock: true,
-    ),
-    Product(
-      id: '6',
-      name: 'Peace Lily',
-      description: 'Elegant flowering plant that purifies air',
-      price: 24.99,
-      imageUrl: '',
-      category: 'Indoor',
-      inStock: true,
-    ),
-  ];
+class _MarketplacePageState extends State<MarketplacePage>
+    with TickerProviderStateMixin {
+  final _supabase = SupabaseService.instance;
+  final _cartManager = CartManager.instance;
 
+  List<Product> _products = [];
+  List<String> _categories = ['All'];
   String _selectedCategory = 'All';
+  bool _isLoading = true;
+  String? _error;
+
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeInOut,
+    );
+    _cartManager.addListener(_onCartChanged);
+    _loadProducts();
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    _cartManager.removeListener(_onCartChanged);
+    super.dispose();
+  }
+
+  void _onCartChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _loadProducts() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final data = await _supabase.getProducts(
+        category: _selectedCategory == 'All' ? null : _selectedCategory,
+      );
+      final categories = await _supabase.getProductCategories();
+
+      if (mounted) {
+        setState(() {
+          _products = data.map((e) => Product.fromMap(e)).toList();
+          _categories = ['All', ...categories];
+          _isLoading = false;
+        });
+        _fadeController.forward(from: 0);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    await _loadProducts();
+  }
+
+  void _onCategorySelected(String category) {
+    setState(() => _selectedCategory = category);
+    _loadProducts();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final filteredProducts = _selectedCategory == 'All'
-        ? _products
-        : _products.where((p) => p.category == _selectedCategory).toList();
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Marketplace'),
         actions: [
-          IconButton(
-            icon: Stack(
-              children: [
-                const Icon(Icons.shopping_cart),
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.shopping_cart_outlined),
+                onPressed: () => context.push('/marketplace/cart'),
+              ),
+              if (_cartManager.itemCount > 0)
                 Positioned(
-                  right: 0,
-                  top: 0,
+                  right: 4,
+                  top: 4,
                   child: Container(
-                    padding: const EdgeInsets.all(2),
+                    padding: const EdgeInsets.all(4),
                     decoration: const BoxDecoration(
                       color: AppColors.error,
                       shape: BoxShape.circle,
                     ),
                     constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
+                      minWidth: 18,
+                      minHeight: 18,
                     ),
-                    child: const Text(
-                      '0',
-                      style: TextStyle(
+                    child: Text(
+                      '${_cartManager.itemCount}',
+                      style: const TextStyle(
                         color: AppColors.white,
                         fontSize: 10,
+                        fontWeight: FontWeight.bold,
                       ),
                       textAlign: TextAlign.center,
                     ),
                   ),
                 ),
-              ],
-            ),
-            onPressed: () => context.push('/marketplace/cart'),
+            ],
           ),
         ],
       ),
       body: Column(
         children: [
           // Category Filter
-          Container(
-            height: 60,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: ListView(
+          SizedBox(
+            height: 56,
+            child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: ['All', 'Indoor', 'Outdoor', 'Succulent', 'Herb'].map((category) {
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              itemCount: _categories.length,
+              itemBuilder: (context, index) {
+                final category = _categories[index];
                 final isSelected = _selectedCategory == category;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
-                    label: Text(category),
+                    label: Text(
+                      category,
+                      style: TextStyle(
+                        color: isSelected ? AppColors.white : AppColors.textPrimary,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
                     selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() => _selectedCategory = category);
-                    },
+                    onSelected: (_) => _onCategorySelected(category),
                     selectedColor: AppColors.primary,
                     checkmarkColor: AppColors.white,
+                    backgroundColor: AppColors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                   ),
                 );
-              }).toList(),
+              },
             ),
           ),
           // Products Grid
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.75,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-              ),
-              itemCount: filteredProducts.length,
-              itemBuilder: (context, index) {
-                return ProductCard(
-                  product: filteredProducts[index],
-                  onTap: () => context.push('/marketplace/product/${filteredProducts[index].id}'),
-                );
-              },
-            ),
+            child: _buildBody(),
           ),
         ],
       ),
     );
   }
-}
 
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: AppColors.error),
+            const SizedBox(height: 16),
+            Text('Failed to load products',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
+              onPressed: _loadProducts,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_products.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.local_florist_outlined,
+                size: 80, color: AppColors.textSecondary),
+            const SizedBox(height: 16),
+            Text('No products found',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text('Try a different category',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    )),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _onRefresh,
+      color: AppColors.primary,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: GridView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.68,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: _products.length,
+          itemBuilder: (context, index) {
+            return ProductCard(
+              product: _products[index],
+              onTap: () =>
+                  context.push('/marketplace/product/${_products[index].id}'),
+              onAddToCart: () {
+                _cartManager.addToCart(_products[index]);
+                _showAddedToCartSnackBar(_products[index]);
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showAddedToCartSnackBar(Product product) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: AppColors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text('${product.name} added to cart'),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+        action: SnackBarAction(
+          label: 'VIEW CART',
+          textColor: AppColors.white,
+          onPressed: () => context.push('/marketplace/cart'),
+        ),
+      ),
+    );
+  }
+}

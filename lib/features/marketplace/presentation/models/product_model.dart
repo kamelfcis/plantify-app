@@ -6,6 +6,7 @@ class Product {
   final String imageUrl;
   final String category;
   final bool inStock;
+  final int stockQuantity;
 
   Product({
     required this.id,
@@ -15,12 +16,41 @@ class Product {
     required this.imageUrl,
     required this.category,
     required this.inStock,
+    this.stockQuantity = 0,
   });
+
+  factory Product.fromMap(Map<String, dynamic> map) {
+    return Product(
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+      description: map['description'] ?? '',
+      price: (map['price'] is int)
+          ? (map['price'] as int).toDouble()
+          : (map['price'] as num?)?.toDouble() ?? 0.0,
+      imageUrl: map['image_url'] ?? '',
+      category: map['category'] ?? '',
+      inStock: map['in_stock'] ?? true,
+      stockQuantity: map['stock_quantity'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'price': price,
+      'image_url': imageUrl,
+      'category': category,
+      'in_stock': inStock,
+      'stock_quantity': stockQuantity,
+    };
+  }
 }
 
 class CartItem {
   final Product product;
-  final int quantity;
+  int quantity;
 
   CartItem({
     required this.product,
@@ -63,4 +93,3 @@ class GiftInfo {
     required this.message,
   });
 }
-

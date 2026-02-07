@@ -220,6 +220,109 @@ class SupabaseService {
   }
 
   // ====================================================
+  // MARKETPLACE METHODS (USER)
+  // ====================================================
+
+  // Get all products (public read)
+  Future<List<Map<String, dynamic>>> getProducts({String? category}) async {
+    var query = _client.from('products').select();
+    if (category != null && category != 'All') {
+      query = query.eq('category', category);
+    }
+    final response = await query.order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  // Get product by ID
+  Future<Map<String, dynamic>> getProductById(String productId) async {
+    final response = await _client
+        .from('products')
+        .select()
+        .eq('id', productId)
+        .single();
+    return response;
+  }
+
+  // Get product categories
+  Future<List<String>> getProductCategories() async {
+    final response = await _client
+        .from('products')
+        .select('category')
+        .order('category');
+    final categories = (response as List)
+        .map((e) => e['category'] as String)
+        .toSet()
+        .toList();
+    return categories;
+  }
+
+  // Create order (user)
+  Future<Map<String, dynamic>> createOrder({
+    required double totalAmount,
+    required Map<String, dynamic> shippingAddress,
+    required List<Map<String, dynamic>> items,
+    bool isGift = false,
+    Map<String, dynamic>? giftInfo,
+  }) async {
+    final user = currentUser;
+    if (user == null) throw Exception('User not authenticated');
+
+    // Generate order number
+    final orderNumber = 'ORD-${DateTime.now().millisecondsSinceEpoch}';
+
+    // Insert order
+    final order = await _client.from('orders').insert({
+      'user_id': user.id,
+      'order_number': orderNumber,
+      'total_amount': totalAmount,
+      'shipping_address': shippingAddress,
+      'status': 'pending',
+      'is_gift': isGift,
+    }).select().single();
+
+    final orderId = order['id'];
+
+    // Insert order items
+    for (final item in items) {
+      await _client.from('order_items').insert({
+        'order_id': orderId,
+        'product_id': item['product_id'],
+        'product_name': item['product_name'],
+        'product_price': item['product_price'],
+        'quantity': item['quantity'],
+        'subtotal': item['subtotal'],
+      });
+    }
+
+    // Insert gift info if applicable
+    if (isGift && giftInfo != null) {
+      await _client.from('gifts').insert({
+        'order_id': orderId,
+        'sender_id': user.id,
+        'receiver_name': giftInfo['receiver_name'],
+        'receiver_email': giftInfo['receiver_email'],
+        'receiver_address': shippingAddress,
+        'gift_message': giftInfo['gift_message'],
+      });
+    }
+
+    return order;
+  }
+
+  // Get user orders
+  Future<List<Map<String, dynamic>>> getUserOrders() async {
+    final user = currentUser;
+    if (user == null) throw Exception('User not authenticated');
+
+    final response = await _client
+        .from('orders')
+        .select('*, order_items(*)')
+        .eq('user_id', user.id)
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  // ====================================================
   // ADMIN METHODS
   // ====================================================
 
