@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../theme/app_colors.dart';
 import 'floating_chatbot_button.dart';
+import '../../services/supabase_service.dart';
 
 class MainScaffold extends StatefulWidget {
   final Widget child;
@@ -17,7 +19,42 @@ class MainScaffold extends StatefulWidget {
   State<MainScaffold> createState() => _MainScaffoldState();
 }
 
-class _MainScaffoldState extends State<MainScaffold> {
+class _MainScaffoldState extends State<MainScaffold> with WidgetsBindingObserver {
+  Timer? _lastSeenTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Update last_seen immediately and then every 2 minutes
+    _updateLastSeen();
+    _lastSeenTimer = Timer.periodic(const Duration(minutes: 2), (_) {
+      _updateLastSeen();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _lastSeenTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // App came to foreground — mark online
+      _updateLastSeen();
+    }
+  }
+
+  Future<void> _updateLastSeen() async {
+    try {
+      await SupabaseService.instance.updateLastSeen();
+    } catch (_) {
+      // Silently ignore — non-critical
+    }
+  }
   int _getCurrentIndex() {
     switch (widget.currentPath) {
       case '/home':
