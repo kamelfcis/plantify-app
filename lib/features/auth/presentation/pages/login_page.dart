@@ -146,6 +146,25 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 16),
+                // Admin access
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () => context.push('/admin/login'),
+                    icon: const Icon(
+                      Icons.admin_panel_settings,
+                      size: 18,
+                      color: AppColors.textSecondary,
+                    ),
+                    label: Text(
+                      'Admin Panel',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

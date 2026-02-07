@@ -19,6 +19,8 @@ import 'features/reminders/presentation/pages/reminders_list_page.dart';
 import 'features/plant_identification/presentation/pages/plant_identification_page.dart';
 import 'features/plant_diagnosis/presentation/pages/plant_diagnosis_page.dart';
 import 'features/chatbot/presentation/pages/chatbot_page.dart';
+import 'features/admin/presentation/pages/admin_login_page.dart';
+import 'features/admin/presentation/pages/admin_dashboard_page.dart';
 import 'services/supabase_service.dart';
 
 class AppRouter {
@@ -33,6 +35,12 @@ class AppRouter {
 
       // Don't redirect from splash - let it handle its own navigation
       if (isSplash) {
+        return null;
+      }
+
+      // Allow admin routes without Supabase auth
+      final isAdmin = state.matchedLocation.startsWith('/admin');
+      if (isAdmin) {
         return null;
       }
 
@@ -122,6 +130,15 @@ class AppRouter {
           currentPath: '/profile',
           child: const ProfilePage(),
         ),
+      ),
+      // Admin routes
+      GoRoute(
+        path: '/admin/login',
+        builder: (context, state) => const AdminLoginPage(),
+      ),
+      GoRoute(
+        path: '/admin/dashboard',
+        builder: (context, state) => const AdminDashboardPage(),
       ),
     ],
   );

@@ -218,5 +218,150 @@ class SupabaseService {
   Future<void> deleteUserPlant(String plantId) async {
     await _client.from('user_plants').delete().eq('id', plantId);
   }
+
+  // ====================================================
+  // ADMIN METHODS
+  // ====================================================
+
+  // Get all users/profiles
+  Future<List<Map<String, dynamic>>> getAllProfiles() async {
+    final response = await _client
+        .from('profiles')
+        .select()
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  // Update last_seen for current user
+  Future<void> updateLastSeen() async {
+    final user = currentUser;
+    if (user == null) return;
+    await _client.from('profiles').update({
+      'last_seen': DateTime.now().toIso8601String(),
+    }).eq('id', user.id);
+  }
+
+  // Block/Unblock a user
+  Future<void> toggleUserBlock(String userId, bool isBlocked) async {
+    await _client.from('profiles').update({
+      'is_blocked': isBlocked,
+    }).eq('id', userId);
+  }
+
+  // Get all products (admin)
+  Future<List<Map<String, dynamic>>> getAllProducts() async {
+    final response = await _client
+        .from('products')
+        .select()
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  // Create product (admin)
+  Future<Map<String, dynamic>> createProduct({
+    required String name,
+    String? description,
+    required double price,
+    required String category,
+    String? imageUrl,
+    bool inStock = true,
+    int stockQuantity = 0,
+  }) async {
+    final response = await _client.from('products').insert({
+      'name': name,
+      'description': description,
+      'price': price,
+      'category': category,
+      'image_url': imageUrl,
+      'in_stock': inStock,
+      'stock_quantity': stockQuantity,
+    }).select().single();
+    return response;
+  }
+
+  // Update product (admin)
+  Future<void> updateProduct(String productId, Map<String, dynamic> data) async {
+    await _client.from('products').update(data).eq('id', productId);
+  }
+
+  // Delete product (admin)
+  Future<void> deleteProduct(String productId) async {
+    await _client.from('products').delete().eq('id', productId);
+  }
+
+  // Upload product image (admin)
+  Future<String> uploadProductImage(String filePath, String fileName) async {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final fileExtension = fileName.split('.').last;
+    final uniqueFileName = 'products/${timestamp}_$fileName';
+
+    final file = File(filePath);
+    await _client.storage.from('product-images').upload(
+      uniqueFileName,
+      file,
+      fileOptions: FileOptions(
+        contentType: 'image/$fileExtension',
+        upsert: false,
+      ),
+    );
+
+    final imageUrl = _client.storage.from('product-images').getPublicUrl(uniqueFileName);
+    return imageUrl;
+  }
+
+  // Get all orders (admin)
+  Future<List<Map<String, dynamic>>> getAllOrders() async {
+    final response = await _client
+        .from('orders')
+        .select('*, order_items(*), gifts(*)')
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  // Update order status (admin)
+  Future<void> updateOrderStatus(String orderId, String status) async {
+    await _client.from('orders').update({
+      'status': status,
+    }).eq('id', orderId);
+  }
+
+  // Get order details with items (admin)
+  Future<Map<String, dynamic>> getOrderDetails(String orderId) async {
+    final response = await _client
+        .from('orders')
+        .select('*, order_items(*), gifts(*)')
+        .eq('id', orderId)
+        .single();
+    return response;
+  }
+
+  // Get user profile by ID
+  Future<Map<String, dynamic>?> getProfileById(String userId) async {
+    try {
+      final response = await _client
+          .from('profiles')
+          .select()
+          .eq('id', userId)
+          .single();
+      return response;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Get dashboard stats
+  Future<Map<String, int>> getAdminStats() async {
+    final profiles = await _client.from('profiles').select('id');
+    final products = await _client.from('products').select('id');
+    final orders = await _client.from('orders').select('id');
+    final gifts = await _client.from('gifts').select('id');
+
+    return {
+      'users': (profiles as List).length,
+      'products': (products as List).length,
+      'orders': (orders as List).length,
+      'gifts': (gifts as List).length,
+    };
+  }
 }
 
