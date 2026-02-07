@@ -325,10 +325,49 @@ class SupabaseService {
 
     final response = await _client
         .from('orders')
-        .select('*, order_items(*)')
+        .select('*, order_items(*, products:product_id(image_url)), gifts(*)')
         .eq('user_id', user.id)
         .order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);
+  }
+
+  // Get user gift orders
+  Future<List<Map<String, dynamic>>> getUserGiftOrders() async {
+    final user = currentUser;
+    if (user == null) throw Exception('User not authenticated');
+
+    final response = await _client
+        .from('orders')
+        .select('*, order_items(*, products:product_id(image_url)), gifts(*)')
+        .eq('user_id', user.id)
+        .eq('is_gift', true)
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  // Get current user profile
+  Future<Map<String, dynamic>?> getMyProfile() async {
+    final user = currentUser;
+    if (user == null) return null;
+
+    try {
+      final response = await _client
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .single();
+      return response;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Update current user profile
+  Future<void> updateMyProfile(Map<String, dynamic> data) async {
+    final user = currentUser;
+    if (user == null) throw Exception('User not authenticated');
+
+    await _client.from('profiles').update(data).eq('id', user.id);
   }
 
   // ====================================================

@@ -13,6 +13,32 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  int _orderCount = 0;
+  int _giftCount = 0;
+  bool _loadingCounts = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCounts();
+  }
+
+  Future<void> _loadCounts() async {
+    try {
+      final orders = await SupabaseService.instance.getUserOrders();
+      final giftOrders = orders.where((o) => o['is_gift'] == true).toList();
+      if (mounted) {
+        setState(() {
+          _orderCount = orders.length;
+          _giftCount = giftOrders.length;
+          _loadingCounts = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingCounts = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = SupabaseService.instance.currentUser;
@@ -71,25 +97,13 @@ class _ProfilePageState extends State<ProfilePage> {
                       _buildMenuItem(
                         icon: Icons.person_outline,
                         title: 'Personal Information',
-                        onTap: () {
-                          // Navigate to edit profile
-                        },
-                      ),
-                      const Divider(),
-                      _buildMenuItem(
-                        icon: Icons.email_outlined,
-                        title: 'Email Settings',
-                        onTap: () {
-                          // Navigate to email settings
-                        },
+                        onTap: () => context.push('/profile/personal-info'),
                       ),
                       const Divider(),
                       _buildMenuItem(
                         icon: Icons.lock_outlined,
                         title: 'Change Password',
-                        onTap: () {
-                          // Navigate to change password
-                        },
+                        onTap: () => context.push('/profile/change-password'),
                       ),
                     ],
                   ),
@@ -102,47 +116,61 @@ class _ProfilePageState extends State<ProfilePage> {
                       _buildMenuItem(
                         icon: Icons.shopping_bag_outlined,
                         title: 'Order History',
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            '3',
-                            style: TextStyle(
-                              color: AppColors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        onTap: () {
-                          _showOrderHistory();
-                        },
+                        trailing: _loadingCounts
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2))
+                            : _orderCount > 0
+                                ? Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      '$_orderCount',
+                                      style: const TextStyle(
+                                        color: AppColors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  )
+                                : null,
+                        onTap: () => context.push('/profile/orders'),
                       ),
                       const Divider(),
                       _buildMenuItem(
                         icon: Icons.card_giftcard_outlined,
                         title: 'Gift History',
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.accent,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            '1',
-                            style: TextStyle(
-                              color: AppColors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        onTap: () {
-                          _showGiftHistory();
-                        },
+                        trailing: _loadingCounts
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2))
+                            : _giftCount > 0
+                                ? Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.accent,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      '$_giftCount',
+                                      style: const TextStyle(
+                                        color: AppColors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  )
+                                : null,
+                        onTap: () => context.push('/profile/gifts'),
                       ),
                     ],
                   ),
@@ -155,24 +183,20 @@ class _ProfilePageState extends State<ProfilePage> {
                       _buildMenuItem(
                         icon: Icons.lightbulb_outline,
                         title: 'Tips & Ideas',
-                        onTap: () {
-                          _showTips();
-                        },
+                        onTap: () => _showTips(),
                       ),
                       const Divider(),
                       _buildMenuItem(
                         icon: Icons.help_outline,
                         title: 'FAQ',
-                        onTap: () {
-                          _showFAQ();
-                        },
+                        onTap: () => _showFAQ(),
                       ),
                       const Divider(),
                       _buildMenuItem(
                         icon: Icons.support_agent_outlined,
                         title: 'Contact Support',
                         onTap: () {
-                          // Navigate to support
+                          context.push('/chatbot');
                         },
                       ),
                     ],
@@ -224,61 +248,6 @@ class _ProfilePageState extends State<ProfilePage> {
       title: Text(title),
       trailing: trailing ?? Icon(Icons.chevron_right, color: AppColors.textSecondary),
       onTap: onTap,
-    );
-  }
-
-  void _showOrderHistory() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Order History'),
-        content: const SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _OrderItem(orderId: '#12345', date: '2024-01-15', total: '\$29.99', status: 'Delivered'),
-              _OrderItem(orderId: '#12344', date: '2024-01-10', total: '\$45.98', status: 'Shipped'),
-              _OrderItem(orderId: '#12343', date: '2024-01-05', total: '\$19.99', status: 'Processing'),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showGiftHistory() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Gift History'),
-        content: const SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _GiftItem(
-                receiver: 'John Doe',
-                date: '2024-01-12',
-                total: '\$29.99',
-                status: 'Delivered',
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -346,127 +315,3 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 }
-
-class _OrderItem extends StatelessWidget {
-  final String orderId;
-  final String date;
-  final String total;
-  final String status;
-
-  const _OrderItem({
-    required this.orderId,
-    required this.date,
-    required this.total,
-    required this.status,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(orderId, style: const TextStyle(fontWeight: FontWeight.bold)),
-              Text(total, style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(date, style: Theme.of(context).textTheme.bodySmall),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getStatusColor(status).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    color: _getStatusColor(status),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'delivered':
-        return AppColors.success;
-      case 'shipped':
-        return AppColors.info;
-      case 'processing':
-        return AppColors.warning;
-      default:
-        return AppColors.textSecondary;
-    }
-  }
-}
-
-class _GiftItem extends StatelessWidget {
-  final String receiver;
-  final String date;
-  final String total;
-  final String status;
-
-  const _GiftItem({
-    required this.receiver,
-    required this.date,
-    required this.total,
-    required this.status,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('To: $receiver', style: const TextStyle(fontWeight: FontWeight.bold)),
-              Text(total, style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(date, style: Theme.of(context).textTheme.bodySmall),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    color: AppColors.success,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-

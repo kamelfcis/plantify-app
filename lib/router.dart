@@ -15,6 +15,10 @@ import 'features/marketplace/presentation/pages/product_detail_page.dart';
 import 'features/marketplace/presentation/pages/cart_page.dart';
 import 'features/marketplace/presentation/pages/checkout_page.dart';
 import 'features/profile/presentation/pages/profile_page.dart';
+import 'features/profile/presentation/pages/order_history_page.dart';
+import 'features/profile/presentation/pages/gift_history_page.dart';
+import 'features/profile/presentation/pages/change_password_page.dart';
+import 'features/profile/presentation/pages/personal_info_page.dart';
 import 'features/reminders/presentation/pages/reminders_list_page.dart';
 import 'features/plant_identification/presentation/pages/plant_identification_page.dart';
 import 'features/plant_diagnosis/presentation/pages/plant_diagnosis_page.dart';
@@ -130,6 +134,22 @@ class AppRouter {
           currentPath: '/profile',
           child: const ProfilePage(),
         ),
+      ),
+      GoRoute(
+        path: '/profile/orders',
+        builder: (context, state) => const OrderHistoryPage(),
+      ),
+      GoRoute(
+        path: '/profile/gifts',
+        builder: (context, state) => const GiftHistoryPage(),
+      ),
+      GoRoute(
+        path: '/profile/change-password',
+        builder: (context, state) => const ChangePasswordPage(),
+      ),
+      GoRoute(
+        path: '/profile/personal-info',
+        builder: (context, state) => const PersonalInfoPage(),
       ),
       // Admin routes
       GoRoute(
