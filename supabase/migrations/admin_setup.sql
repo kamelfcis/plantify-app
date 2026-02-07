@@ -57,3 +57,21 @@ CREATE POLICY "Allow admin to delete products"
     ON public.products FOR DELETE
     USING (true);
 
+-- ====================================================
+-- STORAGE POLICIES FOR ADMIN (product-images bucket)
+-- ====================================================
+-- Allow anyone to upload product images (for admin panel without auth session)
+CREATE POLICY "Allow public upload to product images"
+    ON storage.objects FOR INSERT
+    WITH CHECK (bucket_id = 'product-images');
+
+-- Allow anyone to update product images
+CREATE POLICY "Allow public update product images"
+    ON storage.objects FOR UPDATE
+    USING (bucket_id = 'product-images');
+
+-- Allow anyone to delete product images
+CREATE POLICY "Allow public delete product images"
+    ON storage.objects FOR DELETE
+    USING (bucket_id = 'product-images');
+
