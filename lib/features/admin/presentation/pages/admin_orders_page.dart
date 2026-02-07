@@ -333,16 +333,95 @@ class _AdminOrdersPageState extends State<AdminOrdersPage>
                     '${shipping['city'] ?? ''} ${shipping['zipCode'] ?? ''}'),
               ]),
               const SizedBox(height: 16),
-              // Items
-              _buildDetailSection(
+              // Items with images
+              Text(
                 'Items (${items.length})',
-                items
-                    .map((item) => _buildDetailRow(
-                          '${item['product_name']} x${item['quantity']}',
-                          '\$${item['subtotal']?.toStringAsFixed(2)}',
-                        ))
-                    .toList(),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
               ),
+              const SizedBox(height: 10),
+              ...items.map((item) {
+                final product = item['products'] as Map<String, dynamic>?;
+                final imageUrl = product?['image_url'] as String? ?? '';
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: [
+                      // Product image
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: AppColors.secondary.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: imageUrl.isNotEmpty
+                              ? Image.network(
+                                  imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Icon(
+                                    Icons.local_florist,
+                                    color: AppColors.primary.withOpacity(0.5),
+                                    size: 24,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.local_florist,
+                                  color: AppColors.primary.withOpacity(0.5),
+                                  size: 24,
+                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Product info
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item['product_name'] ?? 'Unknown',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '\$${(item['product_price'] as num?)?.toStringAsFixed(2) ?? '0.00'} × ${item['quantity'] ?? 1}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Subtotal
+                      Text(
+                        '\$${(item['subtotal'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
               // Gift info
               if (isGift && gifts.isNotEmpty) ...[
                 const SizedBox(height: 16),
