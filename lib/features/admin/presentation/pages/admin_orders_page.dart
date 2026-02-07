@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../services/supabase_service.dart';
 
@@ -14,6 +15,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage>
   List<Map<String, dynamic>> _orders = [];
   bool _isLoading = true;
   String _filterStatus = 'All';
+  RealtimeChannel? _ordersChannel;
 
   @override
   bool get wantKeepAlive => true;
@@ -22,6 +24,36 @@ class _AdminOrdersPageState extends State<AdminOrdersPage>
   void initState() {
     super.initState();
     _loadOrders();
+    _startRealtimeListener();
+  }
+
+  @override
+  void dispose() {
+    _stopRealtimeListener();
+    super.dispose();
+  }
+
+  void _startRealtimeListener() {
+    final client = SupabaseService.instance.client;
+    _ordersChannel = client.channel('admin-orders-page');
+    _ordersChannel!
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'orders',
+          callback: (payload) {
+            debugPrint('🔄 Orders table changed — auto-refreshing');
+            _loadOrders();
+          },
+        )
+        .subscribe();
+  }
+
+  void _stopRealtimeListener() {
+    if (_ordersChannel != null) {
+      SupabaseService.instance.client.removeChannel(_ordersChannel!);
+      _ordersChannel = null;
+    }
   }
 
   Future<void> _loadOrders() async {
