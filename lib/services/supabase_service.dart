@@ -72,6 +72,15 @@ class SupabaseService {
   }
 
   Future<void> signOut() async {
+    // Set last_seen to a past time so admin sees user as offline immediately
+    try {
+      final user = currentUser;
+      if (user != null) {
+        await _client.from('profiles').update({
+          'last_seen': DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
+        }).eq('id', user.id);
+      }
+    } catch (_) {}
     await _client.auth.signOut();
   }
 
