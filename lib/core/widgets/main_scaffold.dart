@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../theme/app_colors.dart';
 import 'floating_chatbot_button.dart';
 import '../../services/supabase_service.dart';
+import '../../services/order_notification_service.dart';
 
 class MainScaffold extends StatefulWidget {
   final Widget child;
@@ -31,12 +32,15 @@ class _MainScaffoldState extends State<MainScaffold> with WidgetsBindingObserver
     _lastSeenTimer = Timer.periodic(const Duration(minutes: 2), (_) {
       _updateLastSeen();
     });
+    // Start listening for order status changes (user side)
+    _startOrderStatusListener();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _lastSeenTimer?.cancel();
+    OrderNotificationService.instance.stopUserListener();
     super.dispose();
   }
 
@@ -53,6 +57,77 @@ class _MainScaffoldState extends State<MainScaffold> with WidgetsBindingObserver
       await SupabaseService.instance.updateLastSeen();
     } catch (_) {
       // Silently ignore — non-critical
+    }
+  }
+
+  void _startOrderStatusListener() async {
+    try {
+      await OrderNotificationService.instance.initialize();
+      OrderNotificationService.instance.onStatusChangeForUser =
+          (orderId, newStatus) {
+        if (mounted) {
+          final statusText =
+              newStatus[0].toUpperCase() + newStatus.substring(1);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(
+                    _getStatusIcon(newStatus),
+                    color: AppColors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Your order status: $statusText',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: _getStatusColor(newStatus),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      };
+      OrderNotificationService.instance.startUserListener();
+    } catch (_) {
+      // Silently ignore
+    }
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'processing':
+        return Icons.autorenew;
+      case 'shipped':
+        return Icons.local_shipping;
+      case 'delivered':
+        return Icons.check_circle;
+      case 'cancelled':
+        return Icons.cancel;
+      default:
+        return Icons.info;
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'processing':
+        return AppColors.info;
+      case 'shipped':
+        return const Color(0xFF9B59B6);
+      case 'delivered':
+        return AppColors.success;
+      case 'cancelled':
+        return AppColors.error;
+      default:
+        return AppColors.primary;
     }
   }
   int _getCurrentIndex() {

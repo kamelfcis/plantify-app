@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../services/supabase_service.dart';
+import '../../../../services/order_notification_service.dart';
 import 'admin_users_page.dart';
 import 'admin_products_page.dart';
 import 'admin_orders_page.dart';
@@ -18,6 +19,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
   int _currentIndex = 0;
   Map<String, int> _stats = {};
   bool _isLoadingStats = true;
+  int _newOrderCount = 0;
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -40,12 +42,48 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
         CurvedAnimation(parent: _fadeController, curve: Curves.easeIn);
     _fadeController.forward();
     _loadStats();
+    _startOrderListener();
   }
 
   @override
   void dispose() {
     _fadeController.dispose();
+    OrderNotificationService.instance.stopAdminListener();
     super.dispose();
+  }
+
+  void _startOrderListener() async {
+    await OrderNotificationService.instance.initialize();
+    OrderNotificationService.instance.onNewOrderForAdmin = () {
+      if (mounted) {
+        setState(() => _newOrderCount++);
+        _loadStats(); // Refresh stats
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.notifications_active,
+                    color: AppColors.white, size: 20),
+                SizedBox(width: 12),
+                Text('🛒 New order received!',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+              ],
+            ),
+            backgroundColor: AppColors.primary,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'VIEW',
+              textColor: AppColors.white,
+              onPressed: () => setState(() => _currentIndex = 3),
+            ),
+          ),
+        );
+      }
+    };
+    OrderNotificationService.instance.startAdminListener();
   }
 
   Future<void> _loadStats() async {
@@ -133,7 +171,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
         child: NavigationBar(
           selectedIndex: _currentIndex,
           onDestinationSelected: (index) {
-            setState(() => _currentIndex = index);
+            setState(() {
+              _currentIndex = index;
+              if (index == 3) _newOrderCount = 0; // Clear badge on Orders tab
+            });
           },
           backgroundColor: Colors.transparent,
           indicatorColor: AppColors.primary.withOpacity(0.15),
@@ -154,8 +195,18 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
               label: 'Products',
             ),
             NavigationDestination(
-              icon: Icon(Icons.receipt_long_outlined),
-              selectedIcon: Icon(Icons.receipt_long, color: AppColors.primary),
+              icon: Badge(
+                isLabelVisible: _newOrderCount > 0,
+                label: Text('$_newOrderCount'),
+                backgroundColor: AppColors.error,
+                child: const Icon(Icons.receipt_long_outlined),
+              ),
+              selectedIcon: Badge(
+                isLabelVisible: _newOrderCount > 0,
+                label: Text('$_newOrderCount'),
+                backgroundColor: AppColors.error,
+                child: const Icon(Icons.receipt_long, color: AppColors.primary),
+              ),
               label: 'Orders',
             ),
           ],

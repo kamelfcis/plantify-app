@@ -75,3 +75,14 @@ CREATE POLICY "Allow public delete product images"
     ON storage.objects FOR DELETE
     USING (bucket_id = 'product-images');
 
+-- ====================================================
+-- ENABLE REALTIME ON ORDERS TABLE
+-- ====================================================
+-- This enables Supabase Realtime (Postgres Changes) so the app
+-- can listen for new orders (admin) and status updates (user).
+ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
+
+-- Enable full replica identity so UPDATE events include old record
+-- (needed to compare old status vs new status)
+ALTER TABLE public.orders REPLICA IDENTITY FULL;
+
