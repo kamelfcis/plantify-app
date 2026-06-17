@@ -90,3 +90,4 @@ That's it! Just run these two lines in Supabase SQL Editor.
 
 
 
+

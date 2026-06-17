@@ -117,8 +117,8 @@ class OrderNotificationService {
 
     final title = isGift ? '🎁 New Gift Order!' : '🛒 New Order Received!';
     final body = isGift
-        ? 'Gift Order #$orderNumber — \$${_formatAmount(totalAmount)}'
-        : 'Order #$orderNumber — \$${_formatAmount(totalAmount)}';
+        ? 'Gift Order #$orderNumber — ${_formatAmount(totalAmount)} LE'
+        : 'Order #$orderNumber — ${_formatAmount(totalAmount)} LE';
 
     const androidDetails = AndroidNotificationDetails(
       'order_notifications',

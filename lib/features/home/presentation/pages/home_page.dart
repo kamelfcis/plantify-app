@@ -82,7 +82,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               backgroundColor: AppColors.background,
               flexibleSpace: FlexibleSpaceBar(
                 title: Text(
-                  'Plant Care',
+                  'Plantify',
                   style: Theme.of(context).textTheme.displaySmall,
                 ),
                 centerTitle: false,

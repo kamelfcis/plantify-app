@@ -211,7 +211,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '\$${item.product.price.toStringAsFixed(2)} each',
+                    '${item.product.price.toStringAsFixed(2)} LE each',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -257,7 +257,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '\$${item.total.toStringAsFixed(2)}',
+                  '${item.total.toStringAsFixed(2)} LE',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,
@@ -319,7 +319,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                       ),
                 ),
                 Text(
-                  '\$${_cartManager.total.toStringAsFixed(2)}',
+                  '${_cartManager.total.toStringAsFixed(2)} LE',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,
@@ -349,7 +349,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                 .textTheme
                 .bodyMedium
                 ?.copyWith(color: AppColors.textSecondary)),
-        Text('\$${amount.toStringAsFixed(2)}',
+        Text('${amount.toStringAsFixed(2)} LE',
             style: Theme.of(context).textTheme.bodyMedium),
       ],
     );

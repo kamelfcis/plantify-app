@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:intl_phone_field/phone_number.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/gradient_button.dart';
 import '../../../../core/widgets/glass_card.dart';
 import '../../../../services/supabase_service.dart';
+import '../../../../services/shipping_prefs_service.dart';
 import '../managers/cart_manager.dart';
 
 class CheckoutPage extends StatefulWidget {
@@ -20,8 +25,24 @@ class _CheckoutPageState extends State<CheckoutPage>
   final _formKey = GlobalKey<FormBuilderState>();
   final _supabase = SupabaseService.instance;
   final _cartManager = CartManager.instance;
+  final _shippingPrefs = ShippingPrefsService.instance;
   bool _isGift = false;
   bool _isProcessing = false;
+  bool _isFetchingLocation = false;
+
+  // Phone field state
+  String _completePhoneNumber = '';
+  String _phoneCountryCode = 'EG'; // Default to Egypt
+  String? _phoneValidationError;
+
+  // Controllers for pre-filling saved data
+  final _fullNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _zipCodeController = TextEditingController();
+  final _countryController = TextEditingController();
 
   late AnimationController _successController;
   late Animation<double> _successScale;
@@ -37,16 +58,198 @@ class _CheckoutPageState extends State<CheckoutPage>
       parent: _successController,
       curve: Curves.elasticOut,
     );
+    _loadSavedShippingInfo();
   }
 
   @override
   void dispose() {
     _successController.dispose();
+    _fullNameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    _cityController.dispose();
+    _zipCodeController.dispose();
+    _countryController.dispose();
     super.dispose();
+  }
+
+  /// Load saved shipping info from SharedPreferences
+  Future<void> _loadSavedShippingInfo() async {
+    final saved = await _shippingPrefs.loadShippingInfo();
+    if (saved != null && mounted) {
+      setState(() {
+        _fullNameController.text = saved['fullName'] ?? '';
+        _emailController.text = saved['email'] ?? '';
+        _phoneController.text = saved['phoneNumber'] ?? saved['phone'] ?? '';
+        _completePhoneNumber = saved['phone'] ?? '';
+        _phoneCountryCode = saved['phoneCountryCode'] ?? 'EG';
+        _addressController.text = saved['address'] ?? '';
+        _cityController.text = saved['city'] ?? '';
+        _zipCodeController.text = saved['zipCode'] ?? '';
+        _countryController.text = saved['country'] ?? '';
+      });
+    }
+  }
+
+  /// Save current shipping info to SharedPreferences
+  Future<void> _saveShippingInfo(Map<String, dynamic> data) async {
+    final shippingInfo = {
+      'fullName': data['fullName'] ?? '',
+      'email': data['email'] ?? '',
+      'phone': _completePhoneNumber,
+      'phoneNumber': _phoneController.text,
+      'phoneCountryCode': _phoneCountryCode,
+      'address': data['address'] ?? '',
+      'city': data['city'] ?? '',
+      'zipCode': data['zipCode'] ?? '',
+      'country': data['country'] ?? '',
+    };
+    await _shippingPrefs.saveShippingInfo(shippingInfo);
+  }
+
+  /// Get current location and fill address, city, country from maps
+  Future<void> _fetchLocationFromMaps() async {
+    setState(() => _isFetchingLocation = true);
+
+    try {
+      // Check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Location services are disabled. Please enable them.'),
+              backgroundColor: AppColors.warning,
+            ),
+          );
+        }
+        setState(() => _isFetchingLocation = false);
+        return;
+      }
+
+      // Check permissions
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Location permission denied.'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+          setState(() => _isFetchingLocation = false);
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Location permissions are permanently denied. Please enable them in settings.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+        setState(() => _isFetchingLocation = false);
+        return;
+      }
+
+      // Get current position
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
+
+      // Reverse geocode to get address
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isNotEmpty && mounted) {
+        final place = placemarks.first;
+        setState(() {
+          // Build a full address string
+          final addressParts = <String>[];
+          if (place.street != null && place.street!.isNotEmpty) {
+            addressParts.add(place.street!);
+          }
+          if (place.subLocality != null && place.subLocality!.isNotEmpty) {
+            addressParts.add(place.subLocality!);
+          }
+          if (place.locality != null && place.locality!.isNotEmpty) {
+            addressParts.add(place.locality!);
+          }
+          _addressController.text = addressParts.join(', ');
+
+          _cityController.text = place.administrativeArea ?? place.locality ?? '';
+          _countryController.text = place.country ?? '';
+
+          if (place.postalCode != null && place.postalCode!.isNotEmpty) {
+            _zipCodeController.text = place.postalCode!;
+          }
+        });
+
+        // Update form fields
+        _formKey.currentState?.fields['address']?.didChange(_addressController.text);
+        _formKey.currentState?.fields['city']?.didChange(_cityController.text);
+        _formKey.currentState?.fields['country']?.didChange(_countryController.text);
+        if (_zipCodeController.text.isNotEmpty) {
+          _formKey.currentState?.fields['zipCode']?.didChange(_zipCodeController.text);
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.check_circle, color: AppColors.white),
+                  SizedBox(width: 8),
+                  Expanded(child: Text('Location fetched successfully!')),
+                ],
+              ),
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not get location: $e'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isFetchingLocation = false);
+    }
   }
 
   Future<void> _processOrder() async {
     if (!(_formKey.currentState?.saveAndValidate() ?? false)) return;
+
+    // Validate phone number
+    if (_completePhoneNumber.isEmpty || _phoneController.text.isEmpty) {
+      setState(() => _phoneValidationError = 'Phone number is required');
+      return;
+    }
+
     if (_cartManager.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Your cart is empty!')),
@@ -62,12 +265,15 @@ class _CheckoutPageState extends State<CheckoutPage>
       final shippingAddress = {
         'fullName': data['fullName'],
         'email': data['email'],
-        'phone': data['phone'],
+        'phone': _completePhoneNumber,
         'address': data['address'],
         'city': data['city'],
-        'zipCode': data['zipCode'],
+        'zipCode': data['zipCode'] ?? '',
         'country': data['country'],
       };
+
+      // Save shipping info for future use
+      await _saveShippingInfo(data);
 
       final items = _cartManager.items
           .map((item) => {
@@ -274,7 +480,7 @@ class _CheckoutPageState extends State<CheckoutPage>
                                 ),
                               ),
                               Text(
-                                '\$${item.total.toStringAsFixed(2)}',
+                                '${item.total.toStringAsFixed(2)} LE',
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyMedium
@@ -346,16 +552,51 @@ class _CheckoutPageState extends State<CheckoutPage>
                 ),
               ),
 
-              // Shipping Information
-              Text(
-                'Shipping Information',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+              // Shipping Information Header with Location Button
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Shipping Information',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
+                  ),
+                  // Get Location Button
+                  ElevatedButton.icon(
+                    onPressed: _isFetchingLocation ? null : _fetchLocationFromMaps,
+                    icon: _isFetchingLocation
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.white,
+                            ),
+                          )
+                        : const Icon(Icons.my_location, size: 16),
+                    label: Text(
+                      _isFetchingLocation ? 'Getting...' : 'Use My Location',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               FormBuilderTextField(
                 name: 'fullName',
+                controller: _fullNameController,
                 decoration: const InputDecoration(
                   labelText: 'Full Name',
                   prefixIcon: Icon(Icons.person_outline),
@@ -365,6 +606,7 @@ class _CheckoutPageState extends State<CheckoutPage>
               const SizedBox(height: 12),
               FormBuilderTextField(
                 name: 'email',
+                controller: _emailController,
                 decoration: const InputDecoration(
                   labelText: 'Email',
                   prefixIcon: Icon(Icons.email_outlined),
@@ -375,20 +617,57 @@ class _CheckoutPageState extends State<CheckoutPage>
                 ]),
               ),
               const SizedBox(height: 12),
-              FormBuilderTextField(
-                name: 'phone',
-                decoration: const InputDecoration(
+              IntlPhoneField(
+                controller: _phoneController,
+                decoration: InputDecoration(
                   labelText: 'Phone Number',
-                  prefixIcon: Icon(Icons.phone_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.textSecondary.withOpacity(0.3)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.textSecondary.withOpacity(0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                  ),
+                  errorText: _phoneValidationError,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
-                validator: FormBuilderValidators.required(),
+                initialCountryCode: _phoneCountryCode,
+                disableLengthCheck: true,
+                dropdownTextStyle: Theme.of(context).textTheme.bodyMedium,
+                style: Theme.of(context).textTheme.bodyMedium,
+                flagsButtonPadding: const EdgeInsets.only(left: 12),
+                showDropdownIcon: true,
+                dropdownIconPosition: IconPosition.trailing,
+                dropdownIcon: Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
+                onChanged: (PhoneNumber phone) {
+                  setState(() {
+                    _completePhoneNumber = phone.completeNumber;
+                    _phoneValidationError = null;
+                  });
+                },
+                onCountryChanged: (country) {
+                  setState(() {
+                    _phoneCountryCode = country.code;
+                  });
+                },
               ),
               const SizedBox(height: 12),
               FormBuilderTextField(
                 name: 'address',
-                decoration: const InputDecoration(
+                controller: _addressController,
+                decoration: InputDecoration(
                   labelText: 'Address',
-                  prefixIcon: Icon(Icons.home_outlined),
+                  prefixIcon: const Icon(Icons.home_outlined),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.location_on, color: AppColors.primary),
+                    tooltip: 'Get from maps',
+                    onPressed: _isFetchingLocation ? null : _fetchLocationFromMaps,
+                  ),
                 ),
                 maxLines: 2,
                 validator: FormBuilderValidators.required(),
@@ -396,6 +675,7 @@ class _CheckoutPageState extends State<CheckoutPage>
               const SizedBox(height: 12),
               FormBuilderTextField(
                 name: 'city',
+                controller: _cityController,
                 decoration: const InputDecoration(
                   labelText: 'City',
                   prefixIcon: Icon(Icons.location_city_outlined),
@@ -408,17 +688,19 @@ class _CheckoutPageState extends State<CheckoutPage>
                   Expanded(
                     child: FormBuilderTextField(
                       name: 'zipCode',
+                      controller: _zipCodeController,
                       decoration: const InputDecoration(
-                        labelText: 'ZIP Code',
+                        labelText: 'ZIP Code (Optional)',
                         prefixIcon: Icon(Icons.pin_outlined),
                       ),
-                      validator: FormBuilderValidators.required(),
+                      // No required validator - zipCode is optional
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: FormBuilderTextField(
                       name: 'country',
+                      controller: _countryController,
                       decoration: const InputDecoration(
                         labelText: 'Country',
                         prefixIcon: Icon(Icons.public),
@@ -504,7 +786,7 @@ class _CheckoutPageState extends State<CheckoutPage>
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          '\$${_cartManager.total.toStringAsFixed(2)}',
+                          '${_cartManager.total.toStringAsFixed(2)} LE',
                           style: Theme.of(context)
                               .textTheme
                               .titleLarge
@@ -548,7 +830,7 @@ class _CheckoutPageState extends State<CheckoutPage>
                 ),
           ),
           Text(
-            '\$${amount.toStringAsFixed(2)}',
+            '${amount.toStringAsFixed(2)} LE',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ],

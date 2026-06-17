@@ -2,7 +2,7 @@ import 'package:intl/intl.dart';
 
 class FormatHelper {
   // Currency formatting
-  static String formatCurrency(double amount, {String symbol = '\$'}) {
+  static String formatCurrency(double amount, {String symbol = 'LE'}) {
     final formatter = NumberFormat.currency(symbol: symbol, decimalDigits: 2);
     return formatter.format(amount);
   }

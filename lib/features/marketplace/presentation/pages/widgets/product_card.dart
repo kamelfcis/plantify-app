@@ -179,7 +179,7 @@ class _ProductCardState extends State<ProductCard>
           Row(
             children: [
               Text(
-                '\$${widget.product.price.toStringAsFixed(2)}',
+                '${widget.product.price.toStringAsFixed(2)} LE',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,

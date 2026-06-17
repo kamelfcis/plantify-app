@@ -295,7 +295,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
 
                   // Price
                   Text(
-                    '\$${product.price.toStringAsFixed(2)}',
+                    '${product.price.toStringAsFixed(2)} LE',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.bold,
@@ -363,7 +363,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
                         ),
                         const SizedBox(width: 16),
                         Text(
-                          'Total: \$${(product.price * _quantity).toStringAsFixed(2)}',
+                          'Total: ${(product.price * _quantity).toStringAsFixed(2)} LE',
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
                                     color: AppColors.primary,

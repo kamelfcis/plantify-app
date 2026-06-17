@@ -150,7 +150,7 @@ class _AdminProductsPageState extends State<AdminProductsPage>
                   const SizedBox(height: 12),
                   _buildDialogField(
                     priceController,
-                    'Price (\$)',
+                    'Price (LE)',
                     Icons.attach_money,
                     keyboardType: TextInputType.number,
                   ),
@@ -581,7 +581,7 @@ class _AdminProductsPageState extends State<AdminProductsPage>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '\$${product['price']?.toStringAsFixed(2) ?? '0.00'}',
+                    '${product['price']?.toStringAsFixed(2) ?? '0.00'} LE',
                     style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,

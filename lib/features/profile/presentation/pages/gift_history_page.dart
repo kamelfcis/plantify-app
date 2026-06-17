@@ -252,7 +252,7 @@ class _GiftHistoryPageState extends State<GiftHistoryPage> {
                   }),
                   const Spacer(),
                   Text(
-                    '\$${(order['total_amount'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
+                    '${(order['total_amount'] as num?)?.toStringAsFixed(2) ?? '0.00'} LE',
                     style: const TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
@@ -483,7 +483,7 @@ class _GiftHistoryPageState extends State<GiftHistoryPage> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '\$${(item['product_price'] as num?)?.toStringAsFixed(2) ?? '0.00'} × ${item['quantity'] ?? 1}',
+                              '${(item['product_price'] as num?)?.toStringAsFixed(2) ?? '0.00'} LE × ${item['quantity'] ?? 1}',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textSecondary,
@@ -493,7 +493,7 @@ class _GiftHistoryPageState extends State<GiftHistoryPage> {
                         ),
                       ),
                       Text(
-                        '\$${(item['subtotal'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
+                        '${(item['subtotal'] as num?)?.toStringAsFixed(2) ?? '0.00'} LE',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -554,7 +554,7 @@ class _GiftHistoryPageState extends State<GiftHistoryPage> {
                         style: TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 16)),
                     Text(
-                      '\$${(order['total_amount'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
+                      '${(order['total_amount'] as num?)?.toStringAsFixed(2) ?? '0.00'} LE',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,

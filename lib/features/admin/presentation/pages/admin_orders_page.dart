@@ -311,7 +311,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage>
               // Order info
               _buildDetailSection('Order Info', [
                 _buildDetailRow(
-                    'Total', '\$${order['total_amount']?.toStringAsFixed(2)}'),
+                    'Total', '${order['total_amount']?.toStringAsFixed(2)} LE'),
                 _buildDetailRow(
                     'Date',
                     _formatDate(order['created_at'])),
@@ -400,7 +400,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage>
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '\$${(item['product_price'] as num?)?.toStringAsFixed(2) ?? '0.00'} × ${item['quantity'] ?? 1}',
+                              '${(item['product_price'] as num?)?.toStringAsFixed(2) ?? '0.00'} LE × ${item['quantity'] ?? 1}',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textSecondary,
@@ -411,7 +411,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage>
                       ),
                       // Subtotal
                       Text(
-                        '\$${(item['subtotal'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
+                        '${(item['subtotal'] as num?)?.toStringAsFixed(2) ?? '0.00'} LE',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -793,11 +793,11 @@ class _AdminOrdersPageState extends State<AdminOrdersPage>
                 Expanded(
                   child: Row(
                     children: [
-                      Icon(Icons.attach_money,
+                      Icon(Icons.monetization_on_outlined,
                           size: 16, color: AppColors.textSecondary),
                       const SizedBox(width: 4),
                       Text(
-                        '\$${order['total_amount']?.toStringAsFixed(2) ?? '0.00'}',
+                        '${order['total_amount']?.toStringAsFixed(2) ?? '0.00'} LE',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

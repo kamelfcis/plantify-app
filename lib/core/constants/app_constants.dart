@@ -1,6 +1,6 @@
 class AppConstants {
   // App Info
-  static const String appName = 'Plant Care';
+  static const String appName = 'Plantify';
   static const String appVersion = '1.0.0';
 
   // Storage Keys

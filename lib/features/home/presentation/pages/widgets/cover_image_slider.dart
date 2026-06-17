@@ -207,7 +207,7 @@ class _CoverImageSliderState extends State<CoverImageSlider> {
       'Garden Plants',
       'Tropical Plants',
       'House Plants',
-      'Plant Care',
+      'Plantify',
     ];
     return titles[index % titles.length];
   }

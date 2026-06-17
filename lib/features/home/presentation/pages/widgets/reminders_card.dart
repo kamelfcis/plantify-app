@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:go_router/go_router.dart';
@@ -81,6 +82,83 @@ class _RemindersCardState extends State<RemindersCard> {
           );
         }
       }
+    }
+  }
+
+  /// Open battery optimization settings so the user can whitelist the app.
+  /// Samsung and other OEMs kill background processes aggressively.
+  void _openBatterySettings(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.battery_alert, color: Colors.orange, size: 28),
+            SizedBox(width: 10),
+            Expanded(child: Text('Fix Reminder Notifications')),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Samsung and some Android phones may block reminder alarms due to battery optimization.\n',
+              style: TextStyle(fontSize: 14),
+            ),
+            Text(
+              'To fix this, follow these steps:',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            SizedBox(height: 8),
+            Text('1. Tap "Open Settings" below'),
+            Text('2. Find "Plant Care" in the app list'),
+            Text('3. Set battery to "Unrestricted"'),
+            Text('4. Also check:'),
+            Padding(
+              padding: EdgeInsets.only(left: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('• Settings → Apps → Plant Care → Battery → Unrestricted'),
+                  Text('• Settings → Battery → Background usage limits → Remove Plant Care'),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _launchBatteryIntent();
+            },
+            icon: const Icon(Icons.settings, size: 18),
+            label: const Text('Open Settings'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Launch battery optimization settings using platform channel
+  Future<void> _launchBatteryIntent() async {
+    try {
+      // Try to open battery optimization settings directly
+      const platform = MethodChannel('com.example.plant_care_marketplace/battery');
+      await platform.invokeMethod('openBatteryOptimization');
+    } catch (e) {
+      debugPrint('Could not open battery settings: $e');
+      // If platform channel fails, that's okay - the dialog gives manual instructions
     }
   }
 
@@ -180,35 +258,51 @@ class _RemindersCardState extends State<RemindersCard> {
               ),
               const SizedBox(height: 12),
               // Test notification button
-              TextButton.icon(
-                onPressed: () async {
-                  try {
-                    await NotificationService.instance.testNotification();
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Test notification scheduled for 5 seconds!'),
-                          backgroundColor: AppColors.info,
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Test failed: $e'),
-                          backgroundColor: AppColors.error,
-                        ),
-                      );
-                    }
-                  }
-                },
-                icon: const Icon(Icons.notifications_active, size: 18),
-                label: const Text('Test Notification (5 sec)'),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: () async {
+                        try {
+                          await NotificationService.instance.testNotification();
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Test notification sent! Check your notification bar.'),
+                                backgroundColor: AppColors.info,
+                                duration: Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Test failed: $e'),
+                                backgroundColor: AppColors.error,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.notifications_active, size: 18),
+                      label: const Text('Test', overflow: TextOverflow.ellipsis),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: () => _openBatterySettings(context),
+                      icon: const Icon(Icons.battery_saver, size: 18),
+                      label: const Text('Battery Fix', overflow: TextOverflow.ellipsis),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.warning,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

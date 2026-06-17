@@ -110,7 +110,9 @@ class AppRouter {
         path: '/marketplace',
         builder: (context, state) => MainScaffold(
           currentPath: '/marketplace',
-          child: const MarketplacePage(),
+          child: MarketplacePage(
+            initialSearchQuery: state.uri.queryParameters['q'],
+          ),
         ),
       ),
       GoRoute(

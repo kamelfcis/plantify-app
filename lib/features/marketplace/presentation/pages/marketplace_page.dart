@@ -4,10 +4,14 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../services/supabase_service.dart';
 import '../managers/cart_manager.dart';
 import '../models/product_model.dart';
+import '../utils/product_search.dart';
 import 'widgets/product_card.dart';
 
 class MarketplacePage extends StatefulWidget {
-  const MarketplacePage({super.key});
+  const MarketplacePage({super.key, this.initialSearchQuery});
+
+  /// Optional query string from `/marketplace?q=...` (e.g. home plant search).
+  final String? initialSearchQuery;
 
   @override
   State<MarketplacePage> createState() => _MarketplacePageState();
@@ -17,6 +21,7 @@ class _MarketplacePageState extends State<MarketplacePage>
     with TickerProviderStateMixin {
   final _supabase = SupabaseService.instance;
   final _cartManager = CartManager.instance;
+  late final TextEditingController _searchController;
 
   List<Product> _products = [];
   List<String> _categories = ['All'];
@@ -27,9 +32,22 @@ class _MarketplacePageState extends State<MarketplacePage>
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
+  List<Product> get _visibleProducts => ProductSearch.filter(
+        _products,
+        query: _searchController.text,
+      );
+
+  void _onSearchChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
+    _searchController = TextEditingController(
+      text: widget.initialSearchQuery?.trim() ?? '',
+    );
+    _searchController.addListener(_onSearchChanged);
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -44,6 +62,8 @@ class _MarketplacePageState extends State<MarketplacePage>
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
     _fadeController.dispose();
     _cartManager.removeListener(_onCartChanged);
     super.dispose();
@@ -135,6 +155,33 @@ class _MarketplacePageState extends State<MarketplacePage>
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: TextField(
+              controller: _searchController,
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: 'Search by name, category, or description...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () => _searchController.clear(),
+                      )
+                    : null,
+                filled: true,
+                fillColor: AppColors.white,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
           // Category Filter
           SizedBox(
             height: 56,
@@ -224,6 +271,28 @@ class _MarketplacePageState extends State<MarketplacePage>
       );
     }
 
+    final visible = _visibleProducts;
+    if (visible.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.search_off, size: 64, color: AppColors.textSecondary),
+            const SizedBox(height: 16),
+            Text(
+              'No plants match your search',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => _searchController.clear(),
+              child: const Text('Clear search'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return RefreshIndicator(
       onRefresh: _onRefresh,
       color: AppColors.primary,
@@ -238,15 +307,16 @@ class _MarketplacePageState extends State<MarketplacePage>
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
           ),
-          itemCount: _products.length,
+          itemCount: visible.length,
           itemBuilder: (context, index) {
+            final product = visible[index];
             return ProductCard(
-              product: _products[index],
+              product: product,
               onTap: () =>
-                  context.push('/marketplace/product/${_products[index].id}'),
+                  context.push('/marketplace/product/${product.id}'),
               onAddToCart: () {
-                _cartManager.addToCart(_products[index]);
-                _showAddedToCartSnackBar(_products[index]);
+                _cartManager.addToCart(product);
+                _showAddedToCartSnackBar(product);
               },
             );
           },

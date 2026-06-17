@@ -23,3 +23,4 @@ AND column_name IN ('tips', 'notification_id');
 
 
 
+

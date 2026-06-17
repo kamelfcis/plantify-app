@@ -20,7 +20,7 @@ class GeminiService {
     // Use gemini-2.0-flash for multimodal (image) support
     // Alternative models: gemini-1.5-pro, gemini-pro-vision
     _model ??= GenerativeModel(
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       apiKey: _apiKey,
     );
     return _model!;
